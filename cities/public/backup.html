@@ -1,0 +1,145 @@
+<html>
+
+<head>
+    <title>City Finder</title>
+    <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js"></script>
+
+
+    <script src="https://apis.google.com/js/api.js" type="text/javascript">
+    </script>
+    <script type="text/javascript">
+        //<![CDATA[
+
+        gapi.load('auth', init);
+        //]]>
+    </script>
+
+
+    <script>
+        function myFunction(lat, long) {
+            var mapCanvas = document.getElementById("map");
+            var mapOptions = {
+                center: new google.maps.LatLng(Number(lat), Number(long)),
+                zoom: 12
+            }
+            var map = new google.maps.Map(mapCanvas, mapOptions);
+        }
+    </script>
+
+
+    <script>
+        $(document).ready(function() {
+            $("#cityfield").keyup(function() {
+
+                var url = "http://ec2-54-201-26-35.us-west-2.compute.amazonaws.com:3000/getcity?q=" + $("#cityfield").val();
+                $.getJSON(url, function(data) {
+                    var everything;
+                    everything = "<ul>";
+                    $.each(data, function(i, item) {
+                        everything += "<li> " + data[i].city;
+                    });
+		  
+                    everything += "</ul>";
+                    $("#txtHint").html(everything);
+                });
+
+            });
+	 
+            $("#spellfield").keyup(function(){
+		var url = "http://ec2-54-201-26-35.us-west-2.compute.amazonaws.com:3000/spell?q=" + $("#spellfield").val();
+                $.getJSON(url, function(data){
+                 //       console.log("Keyup");
+                        var everything = "<ul>";
+                        //everything += data.toString();
+			if(data[0].cuantos > 0){
+			 everything += "Spelled Good";
+			}else{
+			 everything += "Not Spelled Good";
+			}
+			everything += "<ul>";
+                        $("#spellHint").html(everything);
+                });
+            });
+
+            $("#button").click(function(e) {
+                var value = $("#cityfield").val();
+                console.log(value);
+                e.preventDefault();
+                $("#dispcity").text(value);
+
+
+                var myurl = "https://api.wunderground.com/api/9112d473c9ec1f48/geolookup/conditions/q/UT/";
+                //var myurl = "http://ec2-54-201-26-35.us-west-2.compute.amazonaws.com:3000/";
+		myurl += value;
+                myurl += ".json";
+                console.log(myurl);
+
+                $.ajax({
+                    url: myurl,
+                    dataType: "jsonp",
+                    success: function(parsed_json) {
+                        var location = parsed_json['location']['city'];
+                        var temp_string = parsed_json['current_observation']['temperature_string'];
+                        var lat = parsed_json['location']['lat'];
+                        var lon = parsed_json['location']['lon'];
+                        var zip = parsed_json['location']['zip'];
+                        var current_weather = parsed_json['current_observation']['weather'];
+                        everything = "<ul>";
+                        everything += "<li>Location: " + location;
+                        everything += "<li>Temperature: " + temp_string;
+                        everything += "<li>Weather: " + current_weather;
+                        everything += "<li>Lat: " + lat;
+                        everything += "<li>Long: " + lon;
+                        everything += "</ul>";
+                        $("#weather").html(everything);
+                        myFunction(lat, lon);
+
+                        var newurl = 'http://api.geonames.org/postalCodeSearch?postalcode=' + zip + '&maxRows=1&username=mheydorn';
+                        $.ajax({
+                            url: newurl,
+                            dataType: "xml",
+
+
+                            success: function(data, textStatus) {
+
+                                var name = $(data).find('adminName2').text();
+                                alert("The Geonames Rest Service Says This City Is In " + name + " County");
+                                console.log(textStatus, data);
+                            }
+                        });
+
+                    }
+                });
+
+                var thing = "stuff.txt";
+                $.ajax({
+                    url: thing,
+                    dataType: 'text',
+                    success: function(data) {}
+                });
+
+
+            });
+
+        });
+    </script>
+</head>
+
+<body>
+    <form>
+        Enter A Utah City: <input type="text" id="cityfield" value=""><br> Suggestion: <span id="txtHint">Empty</span>
+        <input id="button" type="submit" value="Submit">
+    </form>
+    <p>City</p>
+    <textarea id="dispcity">No City</textarea>
+    <p>Current Weather</p>
+    <div id="weather">No weather</div>
+
+   <form>
+	Enter A Word To Check The Spelling (all lower case): <input type = "text" id="spellfield" value = ""<br><span id = "spellHint"></span>
+	</form>
+
+</body>
+
+</html>
